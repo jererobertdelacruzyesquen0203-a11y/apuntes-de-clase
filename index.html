@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="description" content="Graba tus clases, las convierte en texto con precisión y te da un PDF para subirlo a la IA.">
+<title>Apuntes de Clase</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#0f1115; --card:#181b22; --card2:#21252e; --line:#2c313c; --text:#eef0f4; --muted:#9aa3b2;
+  --accent:#4fd1a5; --accent-ink:#062519; --rec:#ff4d5e; --warn:#f5b84a; --err:#ff7070;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;padding:10px 12px;background:var(--bg);border-bottom:1px solid var(--line)}
+.top h1{flex:1;margin:0 4px;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{background:none;border:0;color:var(--text);font-size:26px;line-height:1;width:42px;height:42px;border-radius:10px}
+.icon:active{background:var(--card2)}
+main{max-width:640px;margin:0 auto;padding:16px}
+section{display:flex;flex-direction:column;gap:14px}
+section[hidden]{display:none}
+h2{font-size:13px;color:var(--muted);margin:12px 0 0;text-transform:uppercase;letter-spacing:.08em}
+p{margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.aviso{border-color:var(--warn)}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card2);color:var(--text);font:inherit;font-weight:600;padding:12px 16px;border-radius:12px;min-height:48px;cursor:pointer}
+.btn.grande{font-size:18px;min-height:60px}
+.btn.rec{background:var(--rec);border-color:var(--rec);color:#fff}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.peligro{color:var(--err)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.45;transform:none}
+label{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:15px}
+input,select,textarea{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:12px;font-weight:400;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+textarea{resize:vertical}
+.muted{color:var(--muted);font-weight:400}
+.ayuda{color:var(--muted);font-size:14px}
+.medidor{height:12px;background:var(--card2);border-radius:99px;overflow:hidden}
+.medidor.grande{height:24px}
+.medidor div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#b6f09c 75%,var(--warn));transition:width .08s linear}
+.switch{flex-direction:row;align-items:center;gap:10px;font-weight:400}
+.switch input{width:22px;height:22px;flex:none;accent-color:var(--accent)}
+.consejos summary,details summary{font-weight:600;cursor:pointer}
+.consejos ul,.pasos{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.reloj{font-size:58px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin-top:6px}
+.estado-grab{text-align:center;color:var(--muted);font-weight:600}
+.punto{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--rec);margin-right:4px;animation:lat 1.2s infinite}
+.pausado .punto{background:var(--muted);animation:none}
+@keyframes lat{50%{opacity:.2}}
+.botones{display:flex;gap:10px}
+.botones .btn{flex:1}
+.botones.col{flex-direction:column}
+.texto,.vivo{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.vivo{max-height:40vh;overflow:auto}
+.parrafo{margin:0 0 14px}
+.parrafo:last-child{margin-bottom:0}
+.ts{display:block;font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums;font-weight:700;margin-bottom:2px}
+.item{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--text);font:inherit;cursor:pointer}
+.item:active{background:var(--card2)}
+.item .t{font-weight:700}
+.item .s{font-size:14px;color:var(--muted)}
+.item .e{font-size:14px;font-weight:600;color:var(--accent)}
+.item .e.pend{color:var(--warn)}
+.item .e.err,.item .e.rec{color:var(--err)}
+.meta{color:var(--muted);font-size:14px}
+.estado-clase{border-color:var(--warn)}
+#negra{position:fixed;inset:0;background:#000;z-index:50;display:flex;align-items:flex-start;justify-content:flex-start;touch-action:manipulation;user-select:none}
+#negra[hidden]{display:none}
+#negra div{color:#444;font-size:15px;line-height:1.6;text-align:center;transition:transform 1s}
+#negraReloj{font-size:32px;font-variant-numeric:tabular-nums}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:608px;margin:0 auto;background:#eef0f4;color:#0f1115;padding:12px 14px;border-radius:12px;z-index:60;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+#toast[hidden]{display:none}
+code{background:var(--card2);padding:1px 5px;border-radius:5px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top">
+  <button id="btnAtras" class="icon" aria-label="Volver" hidden>‹</button>
+  <h1 id="titulo">Apuntes de Clase</h1>
+  <button id="btnAjustes" class="icon" aria-label="Ajustes">⚙</button>
+</header>
+
+<main>
+  <!-- Inicio -->
+  <section id="v-inicio">
+    <div id="avisoClave" class="card aviso" hidden>
+      <b>Paso único: activa la transcripción gratis</b>
+      <p class="ayuda">Necesitas una clave gratuita de Groq. Son 2 minutos y no pide tarjeta.</p>
+      <button id="btnIrClave" class="btn">Configurar ahora</button>
+    </div>
+    <button id="btnNueva" class="btn grande rec">● Nueva clase</button>
+    <h2>Mis clases</h2>
+    <div id="lista" class="botones col"></div>
+    <p id="vacio" class="ayuda">Todavía no has grabado ninguna clase.</p>
+  </section>
+
+  <!-- Nueva clase -->
+  <section id="v-nueva" hidden>
+    <label>Asignatura
+      <input id="fAsig" list="asigs" placeholder="Ej.: Políticas de Marketing" autocomplete="off">
+    </label>
+    <datalist id="asigs"></datalist>
+    <label>Tema de hoy <span class="muted">(opcional)</span>
+      <input id="fTema" placeholder="Ej.: Análisis DAFO" autocomplete="off">
+    </label>
+    <label>Palabras difíciles que dirá el profe <span class="muted">(opcional)</span>
+      <textarea id="fClaves" rows="2" placeholder="Nombres, siglas, términos: CAME, PESTEL, merchandising…"></textarea>
+    </label>
+    <p class="ayuda">Así esas palabras salen bien escritas.</p>
+    <label>Idioma de la clase
+      <select id="fIdioma"><option value="es">Español</option><option value="en">Inglés</option></select>
+    </label>
+    <div class="card">
+      <b>Prueba el micrófono</b>
+      <div class="medidor"><div id="nivelNueva"></div></div>
+      <p id="nivelTexto" class="ayuda">Habla un momento: la barra debe moverse.</p>
+      <label class="switch"><input type="checkbox" id="fRuido"> Reducir ruido (solo si el aula es muy ruidosa)</label>
+    </div>
+    <details class="card consejos">
+      <summary>Consejos para que se oiga perfecto</summary>
+      <ul>
+        <li>Pide permiso al profe para grabar la clase.</li>
+        <li>Siéntate delante, o deja el móvil en la mesa del profe.</li>
+        <li>El micrófono está en la parte de abajo del móvil: apúntala hacia el profe.</li>
+        <li>Pon el móvil sobre el estuche o una chaqueta, no directo en la mesa (los golpes se oyen mucho).</li>
+        <li>Lejos del aire acondicionado, del proyector y de la ventana.</li>
+        <li>Necesitas internet (datos o WiFi) para transcribir. Sin internet se guarda igual y se transcribe después.</li>
+      </ul>
+    </details>
+    <button id="btnEmpezar" class="btn grande rec">● Empezar a grabar</button>
+  </section>
+
+  <!-- Grabando -->
+  <section id="v-grabando" hidden>
+    <div class="reloj" id="reloj">00:00:00</div>
+    <div class="estado-grab"><span class="punto"></span><span id="estadoGrab">Grabando</span></div>
+    <div class="medidor grande"><div id="nivelGrab"></div></div>
+    <p id="infoPartes" class="ayuda"></p>
+    <div class="botones">
+      <button id="btnPausa" class="btn">Pausa</button>
+      <button id="btnNegra" class="btn">Pantalla negra</button>
+    </div>
+    <div class="vivo" id="textoVivo"></div>
+    <p class="ayuda">Deja esta pantalla abierta. «Pantalla negra» ahorra batería y sigue grabando.</p>
+    <button id="btnTerminar" class="btn grande">■ Terminar clase</button>
+  </section>
+
+  <!-- Clase guardada -->
+  <section id="v-clase" hidden>
+    <p class="meta" id="claseMeta"></p>
+    <div id="claseEstado" class="card estado-clase" hidden></div>
+    <div class="botones col">
+      <button id="btnPdf" class="btn grande accent">Descargar PDF</button>
+      <button id="btnCompartir" class="btn">Compartir PDF (Claude, ChatGPT, Drive…)</button>
+      <button id="btnCopiarIA" class="btn">Copiar con instrucciones para la IA</button>
+    </div>
+    <div class="texto" id="claseTexto"></div>
+    <details class="card">
+      <summary>Más opciones</summary>
+      <div class="botones col">
+        <button id="btnRenombrar" class="btn">Cambiar asignatura o tema</button>
+        <button id="btnRetranscribir" class="btn">Volver a transcribir todo</button>
+        <button id="btnAudio" class="btn">Descargar el audio</button>
+        <button id="btnBorrarAudio" class="btn">Borrar el audio (dejar solo el texto)</button>
+        <button id="btnBorrar" class="btn peligro">Borrar esta clase</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- Ajustes -->
+  <section id="v-ajustes" hidden>
+    <div class="card">
+      <b>Clave gratuita de Groq</b>
+      <ol class="pasos">
+        <li>Abre <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> y entra con tu cuenta de Google.</li>
+        <li>Pulsa <b>Create API Key</b>, ponle de nombre «apuntes» y pulsa <b>Submit</b>.</li>
+        <li>Copia la clave (empieza por <code>gsk_</code>) y pégala aquí.</li>
+      </ol>
+      <input id="fClave" type="password" placeholder="gsk_…" autocomplete="off" spellcheck="false" autocapitalize="off">
+      <div class="botones">
+        <button id="btnGuardarClave" class="btn accent">Guardar y probar</button>
+        <button id="btnVerClave" class="btn">Ver</button>
+      </div>
+      <p id="claveEstado" class="ayuda"></p>
+      <p class="ayuda">La clave solo se guarda en este móvil. No la compartas ni la enseñes en capturas.</p>
+    </div>
+    <div class="card">
+      <b>Calidad de la transcripción</b>
+      <select id="fModelo">
+        <option value="whisper-large-v3">Máxima precisión (recomendado)</option>
+        <option value="whisper-large-v3-turbo">Más rápida</option>
+      </select>
+      <p class="ayuda">El plan gratis de Groq permite unas 8 horas de clase al día.</p>
+    </div>
+    <div class="card">
+      <b>Espacio en el móvil</b>
+      <p id="espacio" class="ayuda">Cada hora de audio ocupa unos 22 MB.</p>
+      <button id="btnLimpiar" class="btn">Borrar los audios de clases ya transcritas</button>
+    </div>
+  </section>
+</main>
+
+<div id="negra" hidden><div id="negraCaja"><span id="negraReloj">00:00:00</span><br>Grabando · toca dos veces para volver</div></div>
+<div id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
